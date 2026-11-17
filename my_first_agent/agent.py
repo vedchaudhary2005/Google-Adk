@@ -1,37 +1,39 @@
-import time
-from google.adk.agents import LlmAgent
+from google.adk.agents.llm_agent import LlmAgent
 from pydantic import BaseModel, Field
 from datetime import date
 
+# 1. Pydantic schema define kiya output ke contract ke liye
 class TodoItem(BaseModel):
     task: str = Field(description="Task name")
-    due_date: date = Field(description="YYYY-MM-DD format")
-    priority: str = Field(description="low/medium/high")
+    due_date: date = Field(description="Due date in YYYY-MM-DD format")
+    priority: str = Field(description="Priority of the task: low, medium, or high")
 
+# 2. LlmAgent setup kiya schema aur instructions ke sath
 root_agent = LlmAgent(
     name="todo_agent",
-    model="gemini-2.0-flash",  # Flash model use kar raha hai toh stable wala try kar
-    instruction='''Generate todo items in exact JSON format.
+    model="gemini-3.8-flash",  # Stable model version for production
+    instruction='''Generate todo items matching the requested schema.
     Make sure the format is strictly followed.
+    Below are the fields you need to generate:
+    1. task: Task name
+    2. due_date: Due date in YYYY-MM-DD format
+    3. priority: Priority of the task (low/medium/high)
     ''',
     output_schema=TodoItem,
     output_key="todo"
 )
 
-# Retry logic for 503 Overloaded Error
-max_retries = 3
-delay = 2
-
-for attempt in range(max_retries):
+# 3. Agent ko run karne ka example
+if __name__ == "__main__":
     try:
-        print(f"Attempt {attempt + 1}...")
-        todo = root_agent.run("Create high-priority task to call client today")
-        print("Success:", todo)
-        break
+        # Prompt dekar agent execute kar rahe hain
+        response = root_agent.run("Create high-priority task to call client today")
+        print("Agent Response:", response)
+        
+        # Accessing nested output fields directly
+        print(f"Task: {response['todo']['task']}")
+        print(f"Due Date: {response['todo']['due_date']}")
+        print(f"Priority: {response['todo']['priority']}")
+        
     except Exception as e:
-        if "503" in str(e) or "Service Unavailable" in str(e):
-            print(f"Server busy hai (503). {delay} seconds baad dobara try kar rahe hain...")
-            time.sleep(delay)
-            delay *= 2  # Exponential backoff (2s -> 4s -> 8s)
-        else:
-            raise e  koi aur error hoga toh seedha raise kar dega
+        print("Error aa gaya:", e)
