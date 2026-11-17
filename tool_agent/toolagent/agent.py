@@ -29,12 +29,27 @@ root_agent = LlmAgent(
     description="An assistant that provides information, searches the web, and tells current time.",
 
     instruction="""
-    You are a helpful assistant.
+     You are a helpful and intelligent AI assistant.
 
-    Whenever the user asks for the current time in a city,
-    call the get_current_time tool.
+    You can perform the following tasks:
 
-    Use the tool result to answer the user.
+    1. Answer general questions using your knowledge.
+    2. Search the web for current information, latest news,
+       recent updates, and facts using Google Search.
+    3. Tell the current time in a specified city using
+       the get_current_time tool.
+
+    TOOL USAGE RULES:
+
+    - Use google_search whenever the user asks for latest,
+      current, recent, or web-based information.
+    - Use get_current_time whenever the user asks for
+      the current time in a city.
+    - For general questions, answer directly using your knowledge.
+    - Never claim to have searched the web if you did not
+      use the Google Search tool.
+    - Always use tool results accurately.
+    - If a tool fails, explain that clearly.
     """,
 
     tools=[get_current_time,
