@@ -52,23 +52,27 @@ def web_search(query: str) -> dict:
 
 root_agent = LlmAgent(
     name="root_agent",
-    model="gemini-3.8-flash",
-    description="An assistant that provides information, searches the web, and tells current time.",
-    instruction="""
-    You are a helpful and intelligent AI assistant.
-    You can perform the following tasks:
-    1. Answer general questions using your knowledge.
-    2. Search the web for current information, latest news, recent updates using Google Search.
-    3. Tell the current time in a specified city using the get_current_time tool.
+    model=LiteLlm(
+        model="groq/llama-3.3-70b-versatile" 
+    ),
 
-    TOOL USAGE RULES:
-    - Use google_search whenever the user asks for latest, current, recent, or web-based information.
-    - Use get_current_time whenever the user asks for the current time in a city.
+    description="An assistant that provides weather, time, does math, and searches the web using Tavily.",
+
+    instruction="""
+    You are a helpful and intelligent AI assistant powered by Groq.
+    You have access to multiple tools:
+    1. web_search: Use whenever the user asks for latest, current, recent, or web-based information.
+    2. get_current_time: Use whenever the user asks for the current time in a city.
+    3. get_weather: Use whenever the user asks about the weather or temperature in a city.
+    4. multiply_numbers: Use when multiplication is requested.
+    
+    Always select the appropriate tool based on user queries.
     """,
 
     tools=[
         get_current_time,
-        google_search,
+        get_weather,
         multiply_numbers,
+        web_search,
     ]
 )
