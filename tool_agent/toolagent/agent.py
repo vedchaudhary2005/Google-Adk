@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
 from tavily import TavilyClient
+import os
 load_dotenv()
 
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
@@ -53,7 +54,7 @@ def web_search(query: str) -> dict:
 root_agent = LlmAgent(
     name="root_agent",
     model=LiteLlm(
-        model="groq/llama-3.3-70b-versatile" 
+        model="groq/openai/gpt-oss-20b" 
     ),
 
     description="An assistant that provides weather, time, does math, and searches the web using Tavily.",
