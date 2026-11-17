@@ -1,67 +1,37 @@
-import datetime
-from zoneinfo import ZoneInfo
-from google.adk.agents import Agent,LlmAgent
+import time
+from google.adk.agents import LlmAgent
+from pydantic import BaseModel, Field
+from datetime import date
 
-def get_weather(city: str) -> dict:
-    """Retrieves the current weather report for a specified city.
+class TodoItem(BaseModel):
+    task: str = Field(description="Task name")
+    due_date: date = Field(description="YYYY-MM-DD format")
+    priority: str = Field(description="low/medium/high")
 
-    Args:
-        city (str): The name of the city for which to retrieve the weather report.
-
-    Returns:
-        dict: status and result or error msg.
-    """
-    if city.lower() == "new york":
-        return {
-            "status": "success",
-            "report": (
-                "The weather in New York is sunny with a temperature of 25 degrees"
-                " Celsius (77 degrees Fahrenheit)."
-            ),
-        }
-    else:
-        return {
-            "status": "error",
-            "error_message": f"Weather information for '{city}' is not available.",
-        }
-
-
-def get_current_time(city: str) -> dict:
-    """Returns the current time in a specified city.
-
-    Args:
-        city (str): The name of the city for which to retrieve the current time.
-
-    Returns:
-        dict: status and result or error msg.
-    """
-
-    if city.lower() == "new york":
-        tz_identifier = "America/New_York"
-    else:
-        return {
-            "status": "error",
-            "error_message": (
-                f"Sorry, I don't have timezone information for {city}."
-            ),
-        }
-
-    tz = ZoneInfo(tz_identifier)
-    now = datetime.datetime.now(tz)
-    report = (
-        f'The current time in {city} is {now.strftime("%Y-%m-%d %H:%M:%S %Z%z")}'
-    )
-    return {"status": "success", "report": report}
-
-
-root_agent=  LlmAgent(
-    name="weather_time_agent",
-    model="gemini-3.8-flash",
-    description=(
-        "Agent to answer questions about the time and weather in a city."
-    ),
-    instruction=( 
-        "You are a helpful agent who can answer user questions about the time and weather in a city."
-    ),
-    tools=[get_weather, get_current_time],
+root_agent = LlmAgent(
+    name="todo_agent",
+    model="gemini-2.0-flash",  # Flash model use kar raha hai toh stable wala try kar
+    instruction='''Generate todo items in exact JSON format.
+    Make sure the format is strictly followed.
+    ''',
+    output_schema=TodoItem,
+    output_key="todo"
 )
+
+# Retry logic for 503 Overloaded Error
+max_retries = 3
+delay = 2
+
+for attempt in range(max_retries):
+    try:
+        print(f"Attempt {attempt + 1}...")
+        todo = root_agent.run("Create high-priority task to call client today")
+        print("Success:", todo)
+        break
+    except Exception as e:
+        if "503" in str(e) or "Service Unavailable" in str(e):
+            print(f"Server busy hai (503). {delay} seconds baad dobara try kar rahe hain...")
+            time.sleep(delay)
+            delay *= 2  # Exponential backoff (2s -> 4s -> 8s)
+        else:
+            raise e  koi aur error hoga toh seedha raise kar dega
