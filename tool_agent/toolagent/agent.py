@@ -2,10 +2,14 @@ from dotenv import load_dotenv
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
 from tavily import TavilyClient
+from google.adk.tools import load_memory
 import os
 load_dotenv()
 
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+
+
 
 
 
@@ -66,7 +70,7 @@ root_agent = LlmAgent(
     2. get_current_time: Use whenever the user asks for the current time in a city.
     3. get_weather: Use whenever the user asks about the weather or temperature in a city.
     4. multiply_numbers: Use when multiplication is requested.
-    
+    5. load_memory: Retrieve relevant information from previous conversations.
     Always select the appropriate tool based on user queries.
     """,
 
@@ -75,5 +79,6 @@ root_agent = LlmAgent(
         get_weather,
         multiply_numbers,
         web_search,
+        load_memory,
     ]
 )
