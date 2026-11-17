@@ -23,7 +23,7 @@ root_agent = LlmAgent(
     name="root_agent",
 
     model=LiteLlm(
-        model="groq/openai/gpt-oss-20b"
+        model="gemini/gemini-2.0-flash"
     ),
 
     description="An assistant that provides information, searches the web, and tells current time.",
