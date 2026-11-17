@@ -1,8 +1,22 @@
 from dotenv import load_dotenv
-from google.adk.tools import google_search
+from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
-
+from tavily import TavilyClient
 load_dotenv()
+
+tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+
+
+def get_weather(city: str) -> dict:
+    """Returns the current weather for a specified city."""
+    # Yahan tu real weather API bhi laga sakta hai, abhi ke liye mock response hai
+    return {
+        "status": "success",
+        "city": city,
+        "temperature": "28°C",
+        "condition": "Sunny / Clear"
+    }
 
 def get_current_time(city: str) -> dict:
     """Returns the current time in a specified city."""
@@ -21,6 +35,19 @@ def multiply_numbers(a: float, b: float) -> dict:
         "result": result
     }
 
+def web_search(query: str) -> dict:
+    """Searches the web for latest information, recent updates, and facts using Tavily."""
+    try:
+        response = tavily_client.search(query=query, max_results=3)
+        return {
+            "status": "success",
+            "results": response.get("results", [])
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
 root_agent = LlmAgent(
