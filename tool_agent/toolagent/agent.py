@@ -9,7 +9,7 @@ load_dotenv()
 
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
-# --- 1. TOOLS DEFINITION ---
+
 def get_weather(city: str) -> dict:
     """Returns the current weather and temperature for any specified city in the world."""
     try:
@@ -45,7 +45,7 @@ def web_search(query: str) -> dict:
         return {"status": "error", "message": str(e)}
 
 
-# --- 2. AGENT 1: RESEARCH AGENT (Data collect karega) ---
+# --- 2. AGENT 1: RESEARCH AGENT 
 research_agent = LlmAgent(
     name="research_agent",
     model=LiteLlm(model="groq/openai/gpt-oss-20b"),
@@ -55,7 +55,7 @@ research_agent = LlmAgent(
 )
 
 
-# --- 3. AGENT 2: WRITER / FORMATTING AGENT (Data ko polish karega) ---
+# --- 3. AGENT 2: WRITER / FORMATTING AGENT
 writer_agent = LlmAgent(
     name="writer_agent",
     model=LiteLlm(model="groq/openai/gpt-oss-20b"),
