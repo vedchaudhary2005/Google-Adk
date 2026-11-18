@@ -6,3 +6,4 @@ fastapi
 uvicorn
 dotenv
 litellm
+requests
