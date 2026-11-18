@@ -31,15 +31,6 @@ def get_current_time(city: str) -> dict:
         "time": "10:30 PM"
     }
 
-def multiply_numbers(a: float, b: float) -> dict:
-    """Multiplies two numbers together and returns the result."""
-    result = a * b
-    return {
-        "status": "success",
-        "operation": "multiplication",
-        "result": result
-    }
-
 def web_search(query: str) -> dict:
     """Searches the web for latest information, recent updates, and facts using Tavily."""
     try:
