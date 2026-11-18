@@ -1,28 +1,20 @@
-from dotenv import load_dotenv
-from google.adk.models.lite_llm import LiteLlm
-from google.adk.agents import LlmAgent
-from tavily import TavilyClient
-from google.adk.tools import load_memory
-from datetime import datetime
-from zoneinfo import ZoneInfo
 import os
 import requests
+from dotenv import load_dotenv
+from tavily import TavilyClient
+from google.adk.agents import LlmAgent
+from google.adk.models.lite_llm import LiteLlm
+
 load_dotenv()
 
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
-
-
-
-
-
+# --- 1. TOOLS DEFINITION ---
 def get_weather(city: str) -> dict:
     """Returns the current weather and temperature for any specified city in the world."""
     try:
-       
         geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
         geo_res = requests.get(geo_url).json()
-        
         if not geo_res.get("results"):
             return {"status": "error", "message": f"City '{city}' not found."}
             
@@ -31,91 +23,60 @@ def get_weather(city: str) -> dict:
         lon = location["longitude"]
         country = location.get("country", "")
         
-        
         weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code"
         weather_res = requests.get(weather_url).json()
-        
-        current = weather_res.get("current", {})
-        temp = current.get("temperature_2m", "N/A")
+        temp = weather_res.get("current", {}).get("temperature_2m", "N/A")
         
         return {
             "status": "success",
             "city": city,
             "country": country,
-            "temperature": f"{temp}°C",
-            "condition": "Clear / Live Data"
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-
-def get_current_time(city: str) -> dict:
-    """Returns the exact current local time in any specified city using timezone lookup and Python datetime."""
-    try:
-       
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
-        geo_res = requests.get(geo_url).json()
-        
-        if not geo_res.get("results"):
-            return {"status": "error", "message": f"City '{city}' not found."}
-            
-        location = geo_res["results"][0]
-        timezone_str = location.get("timezone", "UTC")
-        country = location.get("country", "")
-        
-        
-        current_time = datetime.now(ZoneInfo(timezone_str)).strftime("%I:%M %p") 
-        current_date = datetime.now(ZoneInfo(timezone_str)).strftime("%Y-%m-%d")
-        
-        return {
-            "status": "success",
-            "city": city,
-            "country": country,
-            "timezone": timezone_str,
-            "date": current_date,
-            "time": current_time
+            "temperature": f"{temp}°C"
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 def web_search(query: str) -> dict:
-    """Searches the web for latest information, recent updates, and facts using Tavily."""
+    """Searches the web for latest information using Tavily."""
     try:
         response = tavily_client.search(query=query, max_results=3)
-        return {
-            "status": "success",
-            "results": response.get("results", [])
-        }
+        return {"status": "success", "results": response.get("results", [])}
     except Exception as e:
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+        return {"status": "error", "message": str(e)}
+
+
+# --- 2. AGENT 1: RESEARCH AGENT (Data collect karega) ---
+research_agent = LlmAgent(
+    name="research_agent",
+    model=LiteLlm(model="groq/openai/gpt-oss-20b"),
+    description="An agent responsible for fetching raw weather data and web information.",
+    instruction="You are a research specialist. Use get_weather or web_search tools to gather precise data requested by the user. Do not format heavily, just fetch the facts.",
+    tools=[get_weather, web_search]
+)
+
+
+# --- 3. AGENT 2: WRITER / FORMATTING AGENT (Data ko polish karega) ---
+writer_agent = LlmAgent(
+    name="writer_agent",
+    model=LiteLlm(model="groq/openai/gpt-oss-20b"),
+    description="An agent responsible for writing a polished, friendly response based on research data.",
+    instruction="You are a professional content writer. Take the raw data provided by the research agent and present it in a clean, engaging, and structured format in Hinglish.",
+    tools=[] 
+)
+
 
 
 root_agent = LlmAgent(
     name="root_agent",
-    model=LiteLlm(
-        model="groq/openai/gpt-oss-20b" 
-    ),
-
-    description="An assistant that provides weather, time, does math, and searches the web using Tavily.",
-
+    model=LiteLlm(model="groq/openai/gpt-oss-20b"),
+    description="Coordinator agent that manages the sequential research and writing pipeline.",
     instruction="""
-    You are a helpful and intelligent AI assistant powered by Groq.
-    You have access to multiple tools:
-    1. web_search: Use whenever the user asks for latest, current, recent, or web-based information.
-    2. get_current_time: Use whenever the user asks for the current time in a city.
-    3. get_weather: Use whenever the user asks about the weather or temperature in a city.
-    4. multiply_numbers: Use when multiplication is requested.
-    5. load_memory: Retrieve relevant information from previous conversations.
-    Always select the appropriate tool based on user queries.
+    You manage a sequential workflow:
+    1. First, delegate the user's query to the `research_agent` to gather accurate data/facts.
+    2. Then, pass that raw data to the `writer_agent` to structure and format it nicely for the user.
     """,
-
-    tools=[
-        get_current_time,
-        get_weather,
-        web_search,
-        load_memory,
-    ]
+    sub_agents=[research_agent, writer_agent]
 )
+
+
+
