@@ -15,7 +15,7 @@ tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
 def get_weather(city: str) -> dict:
     """Returns the current weather for a specified city."""
-    # Yahan tu real weather API bhi laga sakta hai, abhi ke liye mock response hai
+   
     return {
         "status": "success",
         "city": city,
